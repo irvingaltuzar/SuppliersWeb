@@ -564,6 +564,13 @@
   
             </v-col>
       </v-row>
+                 <v-row class="justify-center">
+               <v-col cols="12" md="4">
+         <Captcha ref="reCaptcha" />
+      
+  
+            </v-col>
+      </v-row>
       <v-row class="justify-center">
                 <v-col cols="12" md="4">
       <v-btn :loading="btnloading" type="button" append-icon="mdi-content-save-edit-outline" block color="blue" class="mt-2" variant="outlined" @click="confirmProveedor(4)">Guardar en Borrador</v-btn>
@@ -579,16 +586,23 @@
     </v-form>
   </v-sheet>
     </v-main>
+
   </v-layout>
-   
+
   </v-app>
+ 
 </template>
 
 <script>
 import  Api from '@/store/modules/Api' // Clase Api donde se declara Axios y la ruta al servidor
 import { mapGetters} from 'vuex'
 import { notify } from "@kyvg/vue3-notification";
+import Captcha from './Captcha';
+
   export default {
+    components:{
+      Captcha
+    },
     data: () => ({
        rfcMaxlength:13,
         disRfc:true,
@@ -976,12 +990,39 @@ import { notify } from "@kyvg/vue3-notification";
       },
           async confirmProveedor(st) {
       this.btnloading= true
-    console.log(this.formProveedor.classification_aditional)
 
+        // console.log(this.$refs.reCaptcha.valid)
+        //  if(this.$refs.reCaptcha.valid){
+        //            this.$swal({
+        //     title: 'Valida que no eres un robot',
+        //      message: 'Valida que no eres un robot',
+        //     icon: 'warning',
+        //     confirmButtonText: 'Aceptar'
+        //   })
+        //    }else{
+        //    this.$swal({
+        //     title: 'successs',
+        //      message: 'Valida que no eres un robot',
+        //     icon: 'warning',
+        //     confirmButtonText: 'Aceptar'
+        //   })
+        //   this.$refs.reCaptcha.recaptchaExpired();
+        //    }
       const { valid } = await this.$refs.form.validate()
 
         if (valid){
+          // this.$root.reCaptcha.showRecaptcha=true
+           if(this.$root.reCaptcha.valid){
             this.addProveedor(st);
+           }else{
+            
+             this.$swal({
+              title: 'Valida reCaptcha',
+             message: 'Valida que no eres un robot',
+             icon: 'warning',
+            confirmButtonText: 'Entendido'
+          })
+           }
         } else {
 
           this.$swal({
@@ -1108,6 +1149,7 @@ import { notify } from "@kyvg/vue3-notification";
           })
          }
          this.resetForm();
+          this.$refs.reCaptcha.recaptchaExpired();
 
       }).catch(function(error) {
             this.$swal({
