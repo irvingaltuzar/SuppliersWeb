@@ -304,6 +304,30 @@
           </v-col>
       </v-row>
     </v-container>
+
+    <v-container>
+      <v-row>
+        <v-col cols="12" md="4">
+    <v-checkbox
+      v-model="invitation"
+      label="Invitación directa"
+       color="orange-darken-3"
+      ></v-checkbox>
+         </v-col>
+                <v-col
+          cols="12"
+          md="8"
+        >
+      <v-text-field
+      v-show="invitation"
+        v-model="formProveedor.reference"
+        label="Contacto de Referencia"
+        clearable
+      ></v-text-field> 
+             </v-col>
+      </v-row>
+  </v-container>
+
   <v-container>
    <v-row>
       <v-col cols="12" md="12">
@@ -355,12 +379,14 @@
     ref="files"
     color="deep-purple-accent-4"
     counter
-    label="Adjuntar archivos"
     multiple
     clearable
+    accept="application/pdf"
+    :max-size="19000000"
     placeholder="selecciona tus archivos"
     prepend-icon="mdi-paperclip"
     variant="outlined"
+     @change="validateFile"
     :show-size="1000">
       <template v-slot:selection="{ fileNames }">
         <template v-for="(fileName, index) in fileNames" :key="fileName">
@@ -381,9 +407,14 @@
       </template>
     </template>
   </v-file-input>
-   
    </v-row>
    <v-row class="justify-center mt-3">
+    <v-alert v-if="errors.length > 0" type="error">
+      <ul>
+        <li v-for="err in errors" :key="err">{{ err }}</li>
+      </ul>
+    </v-alert>
+
    <ul>
       <li v-for="(file, index) in this.uploads" :key="index">
           <v-chip
@@ -605,10 +636,13 @@ import Captcha from './Captcha';
     },
     data: () => ({
        rfcMaxlength:13,
+         errors: [],
+         selectedFile: null,
         disRfc:true,
         disState:true,
         btnloading:false,
         disModal:false,
+        invitation:false,
       formProveedor:{
         id: '',
         business_name: '',
@@ -632,7 +666,8 @@ import Captcha from './Captcha';
         credit_days: 30,
         currency:'',
         classification_main:'',
-        classification_aditional:[]
+        classification_aditional:[],
+        reference:'',
       },
         files:[],
         uploads:[],
@@ -648,7 +683,7 @@ import Captcha from './Captcha';
         file_CTB:[],
         file_REPSE:[],
         file_DAER:[],
-    
+      
        business_nameRules: [
         value => {
           if (value?.length > 0) return true
@@ -825,11 +860,10 @@ import Captcha from './Captcha';
     const config = { headers: { 'content-type': 'multipart/form-data' }}
 
           formData.append('rfc', value)
-      const msg= await Api.post('/suppliers/ExistRFC',formData,config).then(res => {
+      const msg= await Api.post('/api/ExistRFC',formData,config).then(res => {
        const { data } = res
-       console.log("dfvb")
        if(data.local != null){
-        if(data.local.status=="4" && this.disModal==false){
+        if((data.local.status=="4" && this.disModal==false) || (data.local.update_user==1 && data.local.status=="0")){
              this.$swal({
             title: 'Registro Proveedor en Borrador',
             text: "Deseas Continuar el proceso donde lo dejaste o comenzar nuevamente?",
@@ -872,6 +906,7 @@ import Captcha from './Captcha';
               this.formProveedor.web_page=data.local.web_page;
               this.formProveedor.currency=data.local.currency;
               this.formProveedor.classification_main=data.local.speciality_main;
+              this.formProveedor.reference=data.local.contact_reference;
               this.formProveedor.state=data.local.state;
               let arrSpec = [];
               let arrfiles = [];
@@ -984,6 +1019,7 @@ import Captcha from './Captcha';
         this.formProveedor.classification_aditional=[];
         this.formProveedor.classification_main=[];
         this.formProveedor.currency='';
+        this.formProveedor.reference='';
         this.files=[];
         this.uploads=[];
         this.disModal=false
@@ -1012,16 +1048,17 @@ import Captcha from './Captcha';
 
         if (valid){
           // this.$root.reCaptcha.showRecaptcha=true
-           if(this.$root.reCaptcha.valid){
+           if(this.$refs.reCaptcha.valid){
             this.addProveedor(st);
            }else{
-            
+
              this.$swal({
               title: 'Valida reCaptcha',
              message: 'Valida que no eres un robot',
              icon: 'warning',
             confirmButtonText: 'Entendido'
           })
+          this.btnloading=false;
            }
         } else {
 
@@ -1125,10 +1162,11 @@ import Captcha from './Captcha';
       formData.append('currency', this.formProveedor.currency)
       formData.append('classification_main', this.formProveedor.classification_main)
       formData.append('classification_aditional', this.formProveedor.classification_aditional)
+      formData.append('contact_reference', this.formProveedor.reference)
       formData.append('status', st)
      
 
-      await Api.post('/suppliers/addSupplierWeb', formData, config).then(res => {
+      await Api.post('/api/addSupplierWeb', formData, config).then(res => {
         currentObj.res = res.data
         currentObj.status = res.status
 
@@ -1169,7 +1207,7 @@ import Captcha from './Captcha';
       const formData = new FormData()
       
       formData.append('id', id)
-         await Api.post('/suppliers/DeleteSupplierWeb', formData, config).then(res => {
+         await Api.post('/api/DeleteSupplierWeb', formData, config).then(res => {
         currentObj.res = res.data
         currentObj.status = res.status
            
@@ -1199,7 +1237,7 @@ import Captcha from './Captcha';
           formData.append('id', file.id)
           formData.append('name', file.name)
           formData.append('supplier_id', file.dmiaba_supplier_registration_id)
-            await Api.post('/suppliers/DeleteFilesSupplierWeb', formData, config).then(res => {
+            await Api.post('/api/DeleteFilesSupplierWeb', formData, config).then(res => {
             currentObj.res = res.data
             currentObj.status = res.status
             this.uploads=res.data.get_document_supplier_all
@@ -1220,7 +1258,25 @@ import Captcha from './Captcha';
               })
           })
 
+        },
+        validateFile(file) {
+        const validFiles = [];
+      const fileInput = this.$refs.files;
+      const files = fileInput.files;
+      this.errors=[];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.type !== 'application/pdf' || file.size > 20000000) {
+          // Si el archivo no es PDF o sobrepasa el tamaño máximo, no se agrega a los archivos válidos
+          this.errors.push(`El archivo "${file.name}" no es un PDF válido o excede el tamaño permitido (20MB).`);
+        } else {
+          validFiles.push(file);
         }
+      }
+
+      // Reemplazar los archivos con los archivos válidos
+      this.files = validFiles;
+    },
     }
   }
 </script>

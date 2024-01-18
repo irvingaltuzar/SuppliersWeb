@@ -1,16 +1,11 @@
 
 import Api from './Api' // Clase Api donde se declara Axios y la ruta al servidor
+import Csrf from "./Csrf" //Clase donde se obtiene crsf-cookie para la autenticacion
+import { setAuthToken } from './Api'
 // import axios from 'axios'
 
-// // // import Vue from '@vitejs/plugin-vue'
-// // const Api = axios.create({
-// //   baseURL: "http://localhost:8001"
-// //   // baseURL: `${process.env.VUE_APP_API_URL}`
-// // })
-
-// // Api.defaults.withCredentials = true
-
 const getters = {
+   token: state => state.token,
     Countries: state => state.arrCountries,
     Specialities: state => state.arrSpecialities,
     catSupplierDocuments: state => state.arrCatSupplierDocuments,
@@ -21,6 +16,7 @@ const getters = {
     ReportAccess: state => state.arrReportAccess,
 }
 const state = {
+token: '',
  arrCountries:[],
  arrBanks:[],
  arrStates:[],
@@ -28,6 +24,10 @@ const state = {
  arrReportAccess:[],
  arrSuppliersEFO:[],
  arrCatSupplierDocuments:[],
+  loginForm: {
+  usuario: import.meta.env.VITE_APP_USER,
+  password: import.meta.env.VITE_APP_PASS
+},
 }
 
 const mutations = {
@@ -71,13 +71,49 @@ const mutations = {
     SET_CAT_SUPPLIER_DOCUMENTS: (state, payload) => {
       state.arrCatSupplierDocuments = payload
     },
+    SET_TOKEN: (state, token) => {
+      state.token = token
+    },
 }
 const actions = {
+
+       // Action que ejecuta la peticion de Auth al backend
+ async login({ commit }, credenciales) {
+    if(token=="" || token=="null"){
+ await Csrf.getCookie();
+ return new Promise((resolve, reject) => {
+
+  //Hacemos la peticion a la ruta /login de laravel para autenticar y crear sesion
+   Api.post('/api/login', state.loginForm).then(res=>{
+     //Obtenemos la respuesta y declaramos constante data de res
+     const { data,config } =  res
+
+     //hacemos commit a la mutation token y le mandamos el valor del token de Auth
+     commit('SET_TOKEN', config.headers["X-XSRF-TOKEN"])
+        // localStorage.setItem('token', data.accessToken);
+     setAuthToken(data.accessToken)
+    //  setToken(config.headers["X-XSRF-TOKEN"])
+
+     resolve(res)
+   }).catch(error => {
+  //    if (error.response.status === 422) {
+   
+  //      Message({
+  //        message: error.response.data.errors.usuario[0] || 'Error',
+  //        type: 'error',
+  //        duration: 5 * 1000
+  //      })
+  //  }
+   reject(error);// error
+   })
+   })
+  }
+},
   async getExistRFC({ commit, state },formData){
     const config = { headers: { 'content-type': 'multipart/form-data' }}
     return new Promise((resolve) => {
 
-    Api.post('/suppliers/ExistRFC',formData,config).then(res => {
+    Api.post('/api/ExistRFC',formData,config).then(res => {
     const { data } = res
         resolve(data)
       }).catch(error => {
@@ -89,7 +125,7 @@ const actions = {
     return new Promise((resolve, reject) => {
 
 
-       Api.get('/suppliers/getCountries').then(res=>{
+       Api.get('/api/getCountries').then(res=>{
         const { data } = res
         commit('SET_COUNTRIES', data)
         resolve()
@@ -104,7 +140,7 @@ const actions = {
     return new Promise((resolve, reject) => {
 
 
-       Api.get('/suppliers/getSpecialities').then(res=>{
+       Api.get('/api/getSpecialities').then(res=>{
         const { data } = res
         commit('SET_SPECIALITIES', data)
         resolve()
@@ -120,7 +156,7 @@ const actions = {
     return new Promise((resolve, reject) => {
 
 
-       Api.get('/suppliers/getBanks').then(res=>{
+       Api.get('/api/getBanks').then(res=>{
         const { data } = res
         commit('SET_BANKS', data)
         resolve()
@@ -131,58 +167,13 @@ const actions = {
       })
 
    },
-   async getMySuppliers({ commit, state }){
-    return new Promise((resolve, reject) => {
-
-
-       Api.get('/suppliers/getMySuppliers').then(res=>{
-        const { data } = res
-        commit('SET_MY_SUPPLIERS', data)
-        resolve()
-        }).catch(error => {
-          console.log(error);
-          reject(error)
-        })
-      })
-
-   },
-   async getSuppliersEFO({ commit, state },formData){
-    const config = { headers: { 'content-type': 'multipart/form-data' }}
-    return new Promise((resolve, reject) => {
-
-       Api.post('/suppliers/getSuppliersEFO',formData,config).then(res=>{
-        const { data } = res
-        commit('SET_SUPPLIERS_EFO', data.data)
-        resolve(data)
-        }).catch(error => {
-          console.log(error);
-          reject(error)
-        })
-      })
-
-   },
-   async getSuppliersEFOSearch({ commit, state },formData){
-    const config = { headers: { 'content-type': 'multipart/form-data' }}
-    return new Promise((resolve, reject) => {
-
-
-       Api.post('/suppliers/getSuppliersEFOSearch',formData,config).then(res=>{
-        const { data } = res
-        commit('SET_SUPPLIERS_EFO', data.data)
-        resolve(data)
-        }).catch(error => {
-          console.log(error);
-          reject(error)
-        })
-      })
-
-   },
+   
    async getStatesbyCountry({ commit, state },formData){
     const config = { headers: { 'content-type': 'multipart/form-data' }}
     return new Promise((resolve, reject) => {
 
 
-       Api.post('/suppliers/getStatesbyCountry',formData,config).then(res=>{
+       Api.post('/api/getStatesbyCountry',formData,config).then(res=>{
         const { data } = res
         commit('SET_STATES', data)
         resolve()
@@ -193,55 +184,8 @@ const actions = {
       })
 
    },
-
-   async getStates({ commit, state }){
-    return new Promise((resolve, reject) => {
-
-
-       Api.get('/suppliers/getStates').then(res=>{
-        const { data } = res
-        commit('SET_STATES', data)
-        resolve()
-        }).catch(error => {
-          console.log(error);
-          reject(error)
-        })
-      })
-
-   },
-
-   async getReportAccessSupplier({ commit, state }){
-    return new Promise((resolve, reject) => {
-
-
-       Api.get('/suppliers/getReportAccessSupplier').then(res=>{
-        const { data } = res
-        commit('SET_REPORT_ACCESS_SUPPLIERS', data)
-        resolve()
-        }).catch(error => {
-          console.log(error);
-          reject(error)
-        })
-      })
-
-   },
-   async getCatSupplierDocuments({ commit, state }){
-    return new Promise((resolve, reject) => {
-
-
-       Api.get('/suppliers/supplier-documents').then(res=>{
-        const { data } = res.data
-        commit('SET_CAT_SUPPLIER_DOCUMENTS', data)
-        resolve()
-        }).catch(error => {
-          console.log(error);
-          reject(error)
-        })
-      })
-
-   },
+   
 }
-
 export default {
   state,
   mutations,
