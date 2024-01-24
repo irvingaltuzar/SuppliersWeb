@@ -627,7 +627,6 @@
 <script>
 import  Api from '@/store/modules/Api' // Clase Api donde se declara Axios y la ruta al servidor
 import { mapGetters} from 'vuex'
-import { notify } from "@kyvg/vue3-notification";
 import Captcha from './Captcha';
 
   export default {
@@ -838,7 +837,7 @@ import Captcha from './Captcha';
 
       }
     },
-    async rfcRules(value){
+     async rfcRules(value){
       let patron="";
        let rfcp="";
        if(value.trim() != ''){
@@ -860,10 +859,14 @@ import Captcha from './Captcha';
     const config = { headers: { 'content-type': 'multipart/form-data' }}
 
           formData.append('rfc', value)
-      const msg= await Api.post('/api/ExistRFC',formData,config).then(res => {
-       const { data } = res
+          console.log("jdjhv")
+      //  await Api.post('/api/ExistRFC',formData,config).then(res => {
+        const res =  await Api.post('/api/v1/ExistRFC', formData, config);
+        const data = res.data; // Aquí obtienes el objeto de datos de la respuesta
+
+      //  const { data } = res
        if(data.local != null){
-        if((data.local.status=="4" && this.disModal==false) || (data.local.update_user==1 && data.local.status=="0")){
+        if((data.local.status=="4" ) || (data.local.update_user==1 && data.local.status=="0")){
              this.$swal({
             title: 'Registro Proveedor en Borrador',
             text: "Deseas Continuar el proceso donde lo dejaste o comenzar nuevamente?",
@@ -875,12 +878,12 @@ import Captcha from './Captcha';
             cancelButtonText: 'Empezar de Nuevo',
             reverseButtons: true,
             showCloseButton: true,
-            showClass: {
-              popup: 'animate__animated animate__fadeInDown'
-            },
-            hideClass: {
-              popup: 'animate__animated animate__fadeOutUp'
-            }
+            // showClass: {
+            //   popup: 'animate__animated animate__fadeInDown'
+            // },
+            // hideClass: {
+            //   popup: 'animate__animated animate__fadeOutUp'
+            // }
           }).then((result) => {
           
             if (result.isConfirmed) {
@@ -960,9 +963,14 @@ import Captcha from './Captcha';
        }
         return data
 
-      }).catch(error => {
-        console.log(error)
-      })
+  //  }).catch(error => {
+  //            this.$swal({
+  //         title: "Oops...",
+  //          text: 'Algo ha salido mal, intente de nuevo',
+  //           icon: "error",
+  //           confirmButtonText: 'Aceptar'
+  //         })
+  //     })
       // return msg;
         }else{
             return 'RFC Invalido';
@@ -1166,7 +1174,7 @@ import Captcha from './Captcha';
       formData.append('status', st)
      
 
-      await Api.post('/api/addSupplierWeb', formData, config).then(res => {
+      await Api.post('/api/v1/addSupplierWeb', formData, config).then(res => {
         currentObj.res = res.data
         currentObj.status = res.status
 
@@ -1189,35 +1197,33 @@ import Captcha from './Captcha';
          this.resetForm();
           this.$refs.reCaptcha.recaptchaExpired();
 
-      }).catch(function(error) {
+      }).catch(error => {
             this.$swal({
-            title: 'Error',
-           message: 'Ha ocurrido un error',
-            icon: 'danger',
+          title: "Oops...",
+           text: 'Algo ha salido mal, intente de nuevo',
+            icon: "error",
             confirmButtonText: 'Aceptar'
           })
       })
-        
-
+         this.btnloading = false
     },
-  
    async deleteSupplier(id){
        const currentObj = this
       const config = { headers: { 'content-type': 'multipart/form-data' }}
       const formData = new FormData()
       
       formData.append('id', id)
-         await Api.post('/api/DeleteSupplierWeb', formData, config).then(res => {
+         await Api.post('/api/v1/DeleteSupplierWeb', formData, config).then(res => {
         currentObj.res = res.data
         currentObj.status = res.status
            
          this.resetForm();
 
-      }).catch(function(error) {
-            this.$swal({
-            title: 'Error',
-           message: 'Ha ocurrido un error',
-            icon: 'danger',
+      }).catch(error => {
+             this.$swal({
+          title: "Oops...",
+           text: 'Algo ha salido mal, intente de nuevo',
+            icon: "error",
             confirmButtonText: 'Aceptar'
           })
       })
@@ -1233,31 +1239,55 @@ import Captcha from './Captcha';
           const currentObj = this
           const config = { headers: { 'content-type': 'multipart/form-data' }}
           const formData = new FormData()
-          
+             this.$swal({
+        title: "¿Estás seguro de eliminar el archivo?",
+        showCancelButton: true,
+        cancelButtonText: "No",
+        confirmButtonText: "Si",
+        confirmButtonColor: '#3085d6',
+        reverseButtons: true,
+         showClass: {
+        popup: `
+          animate__animated
+          animate__fadeInUp
+          animate__faster
+        `
+      },
+      hideClass: {
+        popup: `
+          animate__animated
+          animate__fadeOutDown
+          animate__faster
+        `
+      }
+      }).then(async (result) => {
+        if (result.isConfirmed) {
           formData.append('id', file.id)
           formData.append('name', file.name)
           formData.append('supplier_id', file.dmiaba_supplier_registration_id)
-            await Api.post('/api/DeleteFilesSupplierWeb', formData, config).then(res => {
-            currentObj.res = res.data
-            currentObj.status = res.status
-            this.uploads=res.data.get_document_supplier_all
+          
+    try {
+        const res = await Api.post('/api/v1/DeleteFilesSupplierWeb', formData, config);
+        currentObj.res = res.data;
+        currentObj.status = res.status;
+        this.uploads = res.data.get_document_supplier_all;
 
-               this.$swal({
-                title: res.data.success,
-                message: res.data.success,
-                icon: 'success',
-                confirmButtonText: 'Aceptar'
-              })
-
-          }).catch(function(error) {
-                this.$swal({
-                title: 'Error',
-                message: 'Ha ocurrido un error',
-                icon: 'danger',
-                confirmButtonText: 'Aceptar'
-              })
-          })
-
+        this.$swal({
+          title: res.data.success,
+          message: res.data.success,
+          icon: 'success',
+          confirmButtonText: 'Aceptar'
+        });
+      } catch (error) {
+        this.$swal({
+          title: 'Error',
+          message: 'Ha ocurrido un error',
+          icon: 'error',
+          confirmButtonText: 'Aceptar'
+        });
+      }
+      } 
+      });
         },
         validateFile(file) {
         const validFiles = [];

@@ -12,6 +12,9 @@ import axios from 'axios'
 import VueAxios from 'vue-axios'
 import Notifications from '@kyvg/vue3-notification'
 import VueSweetalert2  from 'vue-sweetalert2';
+import ElementPlus from 'element-plus'
+import 'element-plus/dist/index.css'
+import 'animate.css';
 // import VueI18n from 'vue-i18n'
 import { createI18n } from 'vue-i18n'
 
@@ -32,6 +35,8 @@ app.use(VueAxios, axios)
 app.use(Notifications)
 // app.use(i18n)
 app.use(VueSweetalert2);
+app.use(ElementPlus, { size: 'small' });
+app.provide('notify', app.config.globalProperties.$notify )
 app.provide('axios', app.config.globalProperties.axios)
 registerPlugins(app)
 

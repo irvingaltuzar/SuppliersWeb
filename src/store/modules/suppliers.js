@@ -84,7 +84,7 @@ const actions = {
  return new Promise((resolve, reject) => {
 
   //Hacemos la peticion a la ruta /login de laravel para autenticar y crear sesion
-   Api.post('/api/login', state.loginForm).then(res=>{
+   Api.post('/api/v1/login', state.loginForm).then(res=>{
      //Obtenemos la respuesta y declaramos constante data de res
      const { data,config } =  res
 
@@ -113,7 +113,7 @@ const actions = {
     const config = { headers: { 'content-type': 'multipart/form-data' }}
     return new Promise((resolve) => {
 
-    Api.post('/api/ExistRFC',formData,config).then(res => {
+    Api.post('/api/v1/ExistRFC',formData,config).then(res => {
     const { data } = res
         resolve(data)
       }).catch(error => {
@@ -125,7 +125,7 @@ const actions = {
     return new Promise((resolve, reject) => {
 
 
-       Api.get('/api/getCountries').then(res=>{
+       Api.get('/api/v1/getCountries').then(res=>{
         const { data } = res
         commit('SET_COUNTRIES', data)
         resolve()
@@ -140,7 +140,7 @@ const actions = {
     return new Promise((resolve, reject) => {
 
 
-       Api.get('/api/getSpecialities').then(res=>{
+       Api.get('/api/v1/getSpecialities').then(res=>{
         const { data } = res
         commit('SET_SPECIALITIES', data)
         resolve()
@@ -156,7 +156,7 @@ const actions = {
     return new Promise((resolve, reject) => {
 
 
-       Api.get('/api/getBanks').then(res=>{
+       Api.get('/api/v1/getBanks').then(res=>{
         const { data } = res
         commit('SET_BANKS', data)
         resolve()
@@ -173,7 +173,7 @@ const actions = {
     return new Promise((resolve, reject) => {
 
 
-       Api.post('/api/getStatesbyCountry',formData,config).then(res=>{
+       Api.post('/api/v1/getStatesbyCountry',formData,config).then(res=>{
         const { data } = res
         commit('SET_STATES', data)
         resolve()
